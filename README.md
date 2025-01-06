@@ -21,7 +21,7 @@ A full-stack task management application built with the MERN stack (MongoDB, Exp
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone <https://github.com/skouzz/MERN-Task-Management>
 cd task-manager
 ```
 
