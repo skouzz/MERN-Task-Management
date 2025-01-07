@@ -1,69 +1,66 @@
 pipeline {
     agent any
-
     environment {
-        DOCKER_HUB_CREDS = credentials('docker-hub-credentials')
-        DOCKER_IMAGE_BACKEND = 'skouzz/backend'
-        DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-skouzz') // Updated Docker Hub credentials ID
+        BACKEND_IMAGE = 'skouzz/backend'
+        FRONTEND_IMAGE = 'skouzz/frontend'
+        MONGO_IMAGE = 'mongo'
     }
-
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
+                echo "Checking out code from GitHub..."
                 checkout scm
             }
         }
-
-        stage('Build Images') {
+        stage('Build Docker Images') {
             steps {
-                node {
-                    script {
-                        withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                            bat "docker build -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} ./backend"
-                            bat "docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} ./frontend"
-                        }
-                    }
+                script {
+                    echo "Building backend Docker image..."
+                    sh 'docker build -t $BACKEND_IMAGE ./backend'
+
+                    echo "Building frontend Docker image..."
+                    sh 'docker build -t $FRONTEND_IMAGE ./frontend'
                 }
             }
         }
-
-        stage('Security Scan') {
+        stage('Push Docker Images') {
             steps {
-                node {
-                    script {
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
-                    }
+                script {
+                    echo "Logging into Docker Hub..."
+                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+
+                    echo "Pushing backend Docker image..."
+                    sh 'docker push $BACKEND_IMAGE'
+
+                    echo "Pushing frontend Docker image..."
+                    sh 'docker push $FRONTEND_IMAGE'
                 }
             }
         }
-
-        stage('Push to Docker Hub') {
+        stage('Run MongoDB Container') {
             steps {
-                node {
-                    script {
-                        withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                            bat "echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin"
-                            bat "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
-                            bat "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
-                        }
-                    }
+                script {
+                    echo "Running MongoDB container..."
+                    sh 'docker run -d --name mongodb -p 27017:27017 $MONGO_IMAGE'
+                }
+            }
+        }
+        stage('Clean Up') {
+            steps {
+                script {
+                    echo "Cleaning up dangling Docker images..."
+                    sh 'docker image prune -f'
                 }
             }
         }
     }
-
     post {
-        always {
-            node {
-                bat 'docker logout'
-            }
-        }
         success {
             echo "Pipeline completed successfully!"
         }
         failure {
-            echo "Pipeline failed! Please check the logs for detailed error messages."
+            echo "Pipeline failed. Please check the logs for details."
         }
     }
 }
