@@ -27,31 +27,28 @@ pipeline {
         }
 
         stage('Security Scan') {
-    steps {
-        script {
-            try {
-                echo "Running security scan on backend Docker image using Trivy extension..."
-                // Run Trivy scan through Docker using Trivy extension
-                bat 'docker scan %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
+            steps {
+                script {
+                    try {
+                        echo "Running security scan on backend Docker image using Trivy..."
+                        // Run Trivy scan on the backend Docker image
+                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for backend: ${e.message}"
+                    }
 
-            } catch (Exception e) {
-                currentBuild.result = 'FAILURE'
-                error "Security scan failed for backend: ${e.message}"
-            }
-
-            try {
-                echo "Running security scan on frontend Docker image using Trivy extension..."
-                // Run Trivy scan through Docker using Trivy extension
-                bat 'docker scan %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
-            } catch (Exception e) {
-                currentBuild.result = 'FAILURE'
-                error "Security scan failed for frontend: ${e.message}"
+                    try {
+                        echo "Running security scan on frontend Docker image using Trivy..."
+                        // Run Trivy scan on the frontend Docker image
+                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for frontend: ${e.message}"
+                    }
+                }
             }
         }
-    }
-}
-
-
 
         stage('Push to Docker Hub') {
             steps {
@@ -61,10 +58,10 @@ pipeline {
                     bat 'echo %DOCKER_HUB_CREDS_PSW% | docker login -u %DOCKER_HUB_CREDS_USR% --password-stdin'
                     
                     echo "Pushing backend Docker image..."
-                    bat "docker push %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%"
+                    bat 'docker push %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
                     
                     echo "Pushing frontend Docker image..."
-                    bat "docker push %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%"
+                    bat 'docker push %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
                 }
             }
         }
