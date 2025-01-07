@@ -30,13 +30,15 @@ pipeline {
             steps {
                 script {
                     try {
-                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
+                        echo "Running security scan on backend Docker image..."
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for backend: ${e.message}"
                     }
                     try {
-                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
+                        echo "Running security scan on frontend Docker image..."
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for frontend: ${e.message}"
@@ -53,10 +55,10 @@ pipeline {
                     bat 'echo %DOCKER_HUB_CREDS_PSW% | docker login -u %DOCKER_HUB_CREDS_USR% --password-stdin'
                     
                     echo "Pushing backend Docker image..."
-                    bat 'docker push %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
+                    bat "docker push %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%"
                     
                     echo "Pushing frontend Docker image..."
-                    bat 'docker push %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
+                    bat "docker push %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%"
                 }
             }
         }
