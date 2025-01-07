@@ -4,7 +4,8 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = 'skouzz/backend'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
-        DOCKER_HUB_CREDENTIALS = 'docker-hub'  // Added Docker Hub credentials reference
+        DOCKER_HUB_USERNAME = 'skouzz'  // Your Docker Hub username
+        DOCKER_HUB_PAT = 'dckr_pat_A63exY7o4rFLQ0m11Dx1WkAAZmM'  // Your Docker Hub Personal Access Token
     }
 
     stages {
@@ -49,12 +50,10 @@ pipeline {
 
         stage('Docker Hub Login') {  // Separate login stage
             steps {
-                echo "Logging into Docker Hub..."
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW')]) {
-                    bat """
-                        echo %DOCKER_HUB_CREDS_PSW% | docker login --username %DOCKER_HUB_CREDS_USR% --password-stdin
-                    """
-                }
+                echo "Logging into Docker Hub using personal access token..."
+                bat """
+                    echo %DOCKER_HUB_PAT% | docker login --username %DOCKER_HUB_USERNAME% --password-stdin
+                """
             }
         }
 
