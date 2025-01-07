@@ -19,20 +19,20 @@ pipeline {
         stage('Build Images') {
             steps {
                 echo "Building backend Docker image..."
-                sh 'docker build -t $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER ./backend'
+                bat 'docker build -t %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER% ./backend'
                 
                 echo "Building frontend Docker image..."
-                sh 'docker build -t $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER ./frontend'
+                bat 'docker build -t %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER% ./frontend'
             }
         }
 
         stage('Security Scan') {
             steps {
                 echo "Running security scan on backend Docker image..."
-                sh 'trivy image $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
+                bat 'trivy image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
                 
                 echo "Running security scan on frontend Docker image..."
-                sh 'trivy image $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
+                bat 'trivy image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
             }
         }
 
@@ -41,13 +41,13 @@ pipeline {
                 script {
                     echo "Logging into Docker Hub..."
                     // Docker login using Jenkins credentials
-                    sh 'echo $DOCKER_HUB_CREDS_PSW | docker login -u $DOCKER_HUB_CREDS_USR --password-stdin'
+                    bat 'echo %DOCKER_HUB_CREDS_PSW% | docker login -u %DOCKER_HUB_CREDS_USR% --password-stdin'
                     
                     echo "Pushing backend Docker image..."
-                    sh 'docker push $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
+                    bat 'docker push %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
                     
                     echo "Pushing frontend Docker image..."
-                    sh 'docker push $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
+                    bat 'docker push %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
                 }
             }
         }
@@ -56,7 +56,7 @@ pipeline {
     post {
         always {
             echo "Logging out of Docker..."
-            sh 'docker logout'
+            bat 'docker logout'
         }
         success {
             echo "Build and push completed successfully!"
