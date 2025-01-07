@@ -10,23 +10,64 @@ pipeline {
     stages {
         stage('Build Images') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER ./backend'
-                sh 'docker build -t $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER ./frontend'
+                script {
+                    try {
+                        sh 'docker build -t $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER ./backend'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Build backend image failed: ${e.message}"
+                    }
+                    try {
+                        sh 'docker build -t $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER ./frontend'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Build frontend image failed: ${e.message}"
+                    }
+                }
             }
         }
 
         stage('Security Scan') {
             steps {
-                sh 'trivy image $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
-                sh 'trivy image $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
+                script {
+                    try {
+                        sh 'trivy image $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for backend: ${e.message}"
+                    }
+                    try {
+                        sh 'trivy image $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for frontend: ${e.message}"
+                    }
+                }
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                sh 'echo $DOCKER_HUB_CREDS_PSW | docker login -u $DOCKER_HUB_CREDS_USR --password-stdin'
-                sh 'docker push $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
-                sh 'docker push $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
+                script {
+                    try {
+                        sh 'echo $DOCKER_HUB_CREDS_PSW | docker login -u $DOCKER_HUB_CREDS_USR --password-stdin'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Docker login failed: ${e.message}"
+                    }
+                    try {
+                        sh 'docker push $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Push backend image to Docker Hub failed: ${e.message}"
+                    }
+                    try {
+                        sh 'docker push $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Push frontend image to Docker Hub failed: ${e.message}"
+                    }
+                }
             }
         }
     }
@@ -34,6 +75,12 @@ pipeline {
     post {
         always {
             sh 'docker logout'
+        }
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed! Please check the logs for detailed error messages."
         }
     }
 }
