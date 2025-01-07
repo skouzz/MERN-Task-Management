@@ -1,0 +1,22 @@
+frontend:
+  replicaCount: 2
+  image:
+    repository: your-dockerhub-username/task-manager-frontend
+    tag: latest
+  service:
+    type: LoadBalancer
+    port: 80
+
+backend:
+  replicaCount: 2
+  image:
+    repository: your-dockerhub-username/task-manager-backend
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 5000
+
+mongodb:
+  enabled: true
+  persistence:
+    size: 1Gi

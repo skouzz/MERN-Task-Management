@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: your-dockerhub-username/task-manager-frontend:latest
+        image: skouzz/devops/task-manager-frontend:latest
         ports:
         - containerPort: 80

@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         DOCKER_HUB_CREDS = credentials('docker-hub-credentials')
-        DOCKER_IMAGE_BACKEND = 'your-dockerhub-username/task-manager-backend'
-        DOCKER_IMAGE_FRONTEND = 'your-dockerhub-username/task-manager-frontend'
+        DOCKER_IMAGE_BACKEND = 'skouzz/devops/task-manager-backend'
+        DOCKER_IMAGE_FRONTEND = 'skouzz/devops/task-manager-frontend'
     }
 
     stages {

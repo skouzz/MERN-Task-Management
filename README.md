@@ -21,7 +21,7 @@ A full-stack task management application built with the MERN stack (MongoDB, Exp
 
 1. Clone the repository:
 ```bash
-git clone <https://github.com/skouzz/MERN-Task-Management>
+git clone <repository-url>
 cd task-manager
 ```
 
@@ -127,4 +127,4 @@ task-manager/
 
 ## License
 
-This project is licensed under the MIT License
+This project is licensed under the MIT License.
