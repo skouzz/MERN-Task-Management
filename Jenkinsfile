@@ -67,14 +67,13 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up Docker session...'
-            bat 'docker logout'
+            echo 'Skipping Docker logout step...'
         }
         failure {
-            echo 'Build failed. Check the logs for more details.'
+            echo 'Build failed. Skipping cleanup. Check the logs for more details.'
         }
         success {
-            echo 'Build succeeded.'
+            echo 'Build succeeded. Skipping cleanup.'
         }
     }
 }
