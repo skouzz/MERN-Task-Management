@@ -28,11 +28,20 @@ pipeline {
 
         stage('Security Scan') {
             steps {
-                echo "Running security scan on backend Docker image..."
-                bat 'trivy image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
-                
-                echo "Running security scan on frontend Docker image..."
-                bat 'trivy image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
+                script {
+                    try {
+                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for backend: ${e.message}"
+                    }
+                    try {
+                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for frontend: ${e.message}"
+                    }
+                }
             }
         }
 
