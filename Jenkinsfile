@@ -1,11 +1,13 @@
 pipeline {
     agent any
+
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-skouzz') // Updated Docker Hub credentials ID
-        BACKEND_IMAGE = 'skouzz/backend'
-        FRONTEND_IMAGE = 'skouzz/frontend'
-        MONGO_IMAGE = 'mongo'
+        // Replace with your Docker Hub credentials ID
+        DOCKER_HUB_CREDS = credentials('dockerhub-skouzz') // Updated credentials ID
+        DOCKER_IMAGE_BACKEND = 'skouzz/backend'
+        DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
     }
+
     stages {
         stage('Checkout Code') {
             steps {
@@ -13,54 +15,54 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Build Docker Images') {
-            steps {
-                script {
-                    echo "Building backend Docker image..."
-                    sh 'docker build -t $BACKEND_IMAGE ./backend'
 
-                    echo "Building frontend Docker image..."
-                    sh 'docker build -t $FRONTEND_IMAGE ./frontend'
-                }
+        stage('Build Images') {
+            steps {
+                echo "Building backend Docker image..."
+                sh 'docker build -t $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER ./backend'
+                
+                echo "Building frontend Docker image..."
+                sh 'docker build -t $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER ./frontend'
             }
         }
-        stage('Push Docker Images') {
+
+        stage('Security Scan') {
+            steps {
+                echo "Running security scan on backend Docker image..."
+                sh 'trivy image $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
+                
+                echo "Running security scan on frontend Docker image..."
+                sh 'trivy image $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
+            }
+        }
+
+        stage('Push to Docker Hub') {
             steps {
                 script {
                     echo "Logging into Docker Hub..."
-                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-
+                    // Docker login using Jenkins credentials
+                    sh 'echo $DOCKER_HUB_CREDS_PSW | docker login -u $DOCKER_HUB_CREDS_USR --password-stdin'
+                    
                     echo "Pushing backend Docker image..."
-                    sh 'docker push $BACKEND_IMAGE'
-
+                    sh 'docker push $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
+                    
                     echo "Pushing frontend Docker image..."
-                    sh 'docker push $FRONTEND_IMAGE'
-                }
-            }
-        }
-        stage('Run MongoDB Container') {
-            steps {
-                script {
-                    echo "Running MongoDB container..."
-                    sh 'docker run -d --name mongodb -p 27017:27017 $MONGO_IMAGE'
-                }
-            }
-        }
-        stage('Clean Up') {
-            steps {
-                script {
-                    echo "Cleaning up dangling Docker images..."
-                    sh 'docker image prune -f'
+                    sh 'docker push $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
                 }
             }
         }
     }
+
     post {
+        always {
+            echo "Logging out of Docker..."
+            sh 'docker logout'
+        }
         success {
-            echo "Pipeline completed successfully!"
+            echo "Build and push completed successfully!"
         }
         failure {
-            echo "Pipeline failed. Please check the logs for details."
+            echo "Build failed, please check the logs for more details."
         }
     }
 }
