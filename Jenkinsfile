@@ -3,8 +3,9 @@ pipeline {
 
     environment {
         DOCKER_HUB_CREDS = credentials('docker-hub-credentials')
-        DOCKER_IMAGE_BACKEND = 'skouzz/devops/task-manager-backend'
-        DOCKER_IMAGE_FRONTEND = 'skouzz/devops/task-manager-frontend'
+        DOCKER_IMAGE_BACKEND = 'skouzz/backend'
+        DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
+        DOCKER_IMAGE_MONGO = 'skouzz/mongo'
     }
 
     stages {
@@ -12,6 +13,7 @@ pipeline {
             steps {
                 sh 'docker build -t $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER ./backend'
                 sh 'docker build -t $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER ./frontend'
+                sh 'docker build -t $DOCKER_IMAGE_MONGO:$BUILD_NUMBER ./mongo'
             }
         }
 
@@ -19,6 +21,7 @@ pipeline {
             steps {
                 sh 'trivy image $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
                 sh 'trivy image $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
+                sh 'trivy image $DOCKER_IMAGE_MONGO:$BUILD_NUMBER'
             }
         }
 
@@ -27,6 +30,7 @@ pipeline {
                 sh 'echo $DOCKER_HUB_CREDS_PSW | docker login -u $DOCKER_HUB_CREDS_USR --password-stdin'
                 sh 'docker push $DOCKER_IMAGE_BACKEND:$BUILD_NUMBER'
                 sh 'docker push $DOCKER_IMAGE_FRONTEND:$BUILD_NUMBER'
+                sh 'docker push $DOCKER_IMAGE_MONGO:$BUILD_NUMBER'
             }
         }
     }
