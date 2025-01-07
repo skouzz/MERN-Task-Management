@@ -49,6 +49,11 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
+                    echo "Logging into Docker Hub..."
+                    withCredentials([usernamePassword(credentialsId: '6b8d0f39-03c1-49b0-9eec-88d440e46529', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        bat "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin"
+                    }
+
                     echo "Pushing backend Docker image..."
                     bat "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
                     
