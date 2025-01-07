@@ -2,13 +2,20 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDS = credentials('dockerhub-skouzz') 
+        // Replace with your Docker Hub credentials ID
+        DOCKER_HUB_CREDS = credentials('dockerhub-skouzz') // Updated credentials ID
         DOCKER_IMAGE_BACKEND = 'skouzz/backend'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
-        TRIVY_MIRROR = 'https://your-alternate-mirror-url'
     }
 
     stages {
+        stage('Checkout Code') {
+            steps {
+                echo "Checking out code from GitHub..."
+                checkout scm
+            }
+        }
+
         stage('Build Images') {
             steps {
                 echo "Building backend Docker image..."
@@ -24,7 +31,8 @@ pipeline {
                 script {
                     try {
                         echo "Running security scan on backend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest --mirror $TRIVY_MIRROR image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%"
+                        // Run Trivy scan on the backend Docker image
+                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for backend: ${e.message}"
@@ -32,7 +40,8 @@ pipeline {
 
                     try {
                         echo "Running security scan on frontend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest --mirror $TRIVY_MIRROR image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%"
+                        // Run Trivy scan on the frontend Docker image
+                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for frontend: ${e.message}"
@@ -45,6 +54,7 @@ pipeline {
             steps {
                 script {
                     echo "Logging into Docker Hub..."
+                    // Docker login using Jenkins credentials
                     bat 'echo %DOCKER_HUB_CREDS_PSW% | docker login -u %DOCKER_HUB_CREDS_USR% --password-stdin'
                     
                     echo "Pushing backend Docker image..."
