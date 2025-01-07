@@ -11,20 +11,28 @@ pipeline {
         stage('Build Images') {
             steps {
                 script {
-                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        bat "docker build -t %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER% .\\backend"
-                        bat "docker build -t %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER% .\\frontend"
+                    try {
+                        bat 'docker build -t %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER% ./backend'
+                        bat 'docker build -t %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER% ./frontend'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        echo "Build Image Stage Failed: ${e.getMessage()}"
+                        throw e  // Rethrow to mark the build as failed
                     }
                 }
             }
         }
 
-        stage('Security Scan (Trivy Docker Container)') {
+        stage('Security Scan') {
             steps {
                 script {
-                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%"
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%"
+                    try {
+                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
+                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        echo "Security Scan Stage Failed: ${e.getMessage()}"
+                        throw e  // Rethrow to mark the build as failed
                     }
                 }
             }
@@ -33,10 +41,14 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        bat "echo %DOCKER_HUB_CREDS_PSW% | docker login -u %DOCKER_HUB_CREDS_USR% --password-stdin"
-                        bat "docker push %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%"
-                        bat "docker push %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%"
+                    try {
+                        bat 'echo %DOCKER_HUB_CREDS_PSW% | docker login -u %DOCKER_HUB_CREDS_USR% --password-stdin'
+                        bat 'docker push %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
+                        bat 'docker push %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        echo "Push to Docker Hub Stage Failed: ${e.getMessage()}"
+                        throw e  // Rethrow to mark the build as failed
                     }
                 }
             }
@@ -45,22 +57,14 @@ pipeline {
 
     post {
         always {
-            node {
-                script {
-                    try {
-                        echo "Logging out from Docker Hub"
-                        bat 'docker logout'
-                    } catch (Exception e) {
-                        echo "Error during Docker logout: ${e.message}. Skipping Docker logout."
-                    }
-                }
-            }
-        }
-        success {
-            echo 'Pipeline completed successfully!'
+            echo 'Cleaning up Docker session...'
+            bat 'docker logout'
         }
         failure {
-            echo 'Pipeline failed. Check error messages for details.'
+            echo 'Build failed. Check the logs for more details.'
+        }
+        success {
+            echo 'Build succeeded.'
         }
     }
 }
