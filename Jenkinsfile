@@ -5,42 +5,69 @@ pipeline {
         DOCKER_HUB_CREDS = credentials('docker-hub-credentials')
         DOCKER_IMAGE_BACKEND = 'skouzz/backend'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
+        BUILD_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
-        stage('Build Images') {
+        stage('Check Docker') {
             steps {
                 script {
                     try {
-                        bat 'docker build -t %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER% ./backend'
+                        bat 'docker info'
                     } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Build backend image failed: ${e.message}"
+                        error "Docker is not running or not accessible: ${e.message}"
                     }
-                    try {
-                        bat 'docker build -t %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER% ./frontend'
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Build frontend image failed: ${e.message}"
+                }
+            }
+        }
+
+        stage('Build Images') {
+            parallel {
+                stage('Build Backend') {
+                    steps {
+                        script {
+                            bat """
+                                docker build -t ${DOCKER_IMAGE_BACKEND}:${BUILD_TAG} ./backend
+                            """
+                        }
+                    }
+                }
+                stage('Build Frontend') {
+                    steps {
+                        script {
+                            bat """
+                                docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_TAG} ./frontend
+                            """
+                        }
                     }
                 }
             }
         }
 
         stage('Security Scan') {
-            steps {
-                script {
-                    try {
-                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for backend: ${e.message}"
+            parallel {
+                stage('Scan Backend') {
+                    steps {
+                        script {
+                            bat """
+                                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image \
+                                --exit-code 1 \
+                                --severity HIGH,CRITICAL \
+                                ${DOCKER_IMAGE_BACKEND}:${BUILD_TAG}
+                            """
+                        }
                     }
-                    try {
-                        bat 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for frontend: ${e.message}"
+                }
+                stage('Scan Frontend') {
+                    steps {
+                        script {
+                            bat """
+                                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image \
+                                --exit-code 1 \
+                                --severity HIGH,CRITICAL \
+                                ${DOCKER_IMAGE_FRONTEND}:${BUILD_TAG}
+                            """
+                        }
                     }
                 }
             }
@@ -49,23 +76,12 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    try {
-                        bat 'echo %DOCKER_HUB_CREDS_PSW% | docker login -u %DOCKER_HUB_CREDS_USR% --password-stdin'
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Docker login failed: ${e.message}"
-                    }
-                    try {
-                        bat 'docker push %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Push backend image to Docker Hub failed: ${e.message}"
-                    }
-                    try {
-                        bat 'docker push %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Push frontend image to Docker Hub failed: ${e.message}"
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        bat """
+                            echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USER% --password-stdin
+                            docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_TAG}
+                            docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_TAG}
+                        """
                     }
                 }
             }
@@ -75,18 +91,19 @@ pipeline {
     post {
         always {
             script {
-                // Check if Docker is running
-                bat 'docker info || echo "Docker is not running."'
-                // Try to log out from Docker
-                bat 'docker logout || echo "Docker logout failed."'
+                // Clean up images
+                bat """
+                    docker rmi ${DOCKER_IMAGE_BACKEND}:${BUILD_TAG} || true
+                    docker rmi ${DOCKER_IMAGE_FRONTEND}:${BUILD_TAG} || true
+                    docker logout || true
+                """
             }
         }
         success {
             echo "Pipeline completed successfully!"
         }
         failure {
-            echo "Pipeline failed! Please check the logs for detailed error messages."
+            echo "Pipeline failed! Check the logs for details."
         }
     }
 }
-#
