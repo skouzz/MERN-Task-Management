@@ -30,18 +30,19 @@ pipeline {
     steps {
         script {
             try {
-                echo "Running security scan on backend Docker image..."
-                // Run Trivy scan locally using the Trivy extension
-                bat "trivy image --no-progress %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%"
+                echo "Running security scan on backend Docker image using Trivy extension..."
+                // Run Trivy scan through Docker using Trivy extension
+                bat 'docker scan %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%'
+
             } catch (Exception e) {
                 currentBuild.result = 'FAILURE'
                 error "Security scan failed for backend: ${e.message}"
             }
 
             try {
-                echo "Running security scan on frontend Docker image..."
-                // Run Trivy scan locally using the Trivy extension
-                bat "trivy image --no-progress %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%"
+                echo "Running security scan on frontend Docker image using Trivy extension..."
+                // Run Trivy scan through Docker using Trivy extension
+                bat 'docker scan %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%'
             } catch (Exception e) {
                 currentBuild.result = 'FAILURE'
                 error "Security scan failed for frontend: ${e.message}"
@@ -49,6 +50,7 @@ pipeline {
         }
     }
 }
+
 
 
         stage('Push to Docker Hub') {
