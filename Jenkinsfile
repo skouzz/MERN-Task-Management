@@ -27,25 +27,29 @@ pipeline {
         }
 
         stage('Security Scan') {
-            steps {
-                script {
-                    try {
-                        echo "Running security scan on backend Docker image..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for backend: ${e.message}"
-                    }
-                    try {
-                        echo "Running security scan on frontend Docker image..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for frontend: ${e.message}"
-                    }
-                }
+    steps {
+        script {
+            try {
+                echo "Running security scan on backend Docker image..."
+                // Run Trivy scan locally using the Trivy extension
+                bat "trivy image --no-progress %DOCKER_IMAGE_BACKEND%:%BUILD_NUMBER%"
+            } catch (Exception e) {
+                currentBuild.result = 'FAILURE'
+                error "Security scan failed for backend: ${e.message}"
+            }
+
+            try {
+                echo "Running security scan on frontend Docker image..."
+                // Run Trivy scan locally using the Trivy extension
+                bat "trivy image --no-progress %DOCKER_IMAGE_FRONTEND%:%BUILD_NUMBER%"
+            } catch (Exception e) {
+                currentBuild.result = 'FAILURE'
+                error "Security scan failed for frontend: ${e.message}"
             }
         }
+    }
+}
+
 
         stage('Push to Docker Hub') {
             steps {
