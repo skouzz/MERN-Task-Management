@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = 'skouzz/backend'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
+        DOCKER_HUB_CREDENTIALS = 'docker-hub'  // Added Docker Hub credentials reference
     }
 
     stages {
@@ -46,22 +47,24 @@ pipeline {
             }
         }
 
+        stage('Docker Hub Login') {  // Separate login stage
+            steps {
+                echo "Logging into Docker Hub..."
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW')]) {
+                    bat """
+                        echo %DOCKER_HUB_CREDS_PSW% | docker login --username %DOCKER_HUB_CREDS_USR% --password-stdin
+                    """
+                }
+            }
+        }
+
         stage('Push to Docker Hub') {
             steps {
-                script {
-                    echo "Logging into Docker Hub..."
-                    withCredentials([usernamePassword(credentialsId: '6b8d0f39-03c1-49b0-9eec-88d440e46529', usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW')]) {
-                        bat """
-                            echo %DOCKER_HUB_CREDS_PSW% | docker login --username %DOCKER_HUB_CREDS_USR% --password-stdin
-                        """
-                    }
-                    
-                    echo "Pushing backend Docker image..."
-                    bat "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
-                    
-                    echo "Pushing frontend Docker image..."
-                    bat "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
-                }
+                echo "Pushing backend Docker image..."
+                bat "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
+                
+                echo "Pushing frontend Docker image..."
+                bat "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
             }
         }
     }
