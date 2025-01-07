@@ -45,12 +45,14 @@ pipeline {
 
     post {
         always {
-            script {
-                try {
-                    echo "Logging out from Docker Hub"
-                    bat 'docker logout'
-                } catch (Exception e) {
-                    echo "Error during Docker logout: ${e.message}. Skipping Docker logout."
+            node {
+                script {
+                    try {
+                        echo "Logging out from Docker Hub"
+                        bat 'docker logout'
+                    } catch (Exception e) {
+                        echo "Error during Docker logout: ${e.message}. Skipping Docker logout."
+                    }
                 }
             }
         }
