@@ -16,6 +16,13 @@ pipeline {
             }
         }
 
+        stage('Login to Docker Hub') {
+            steps {
+                echo "Logging into Docker Hub..."
+                bat "echo ${DOCKER_HUB_PAT} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
+            }
+        }
+
         stage('Build Images') {
             steps {
                 echo "Building backend Docker image..."
@@ -26,7 +33,7 @@ pipeline {
             }
         }
 
-       stage('Security Scan') {
+        stage('Security Scan') {
             steps {
                 script {
                     try {
@@ -50,7 +57,6 @@ pipeline {
 
         stage('Push to Docker Hub') {
             steps {
-                
                 echo "Pushing backend Docker image to Docker Hub..."
                 bat "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
                 
