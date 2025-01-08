@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: skouzz/devops/task-manager-frontend:latest
+        image: skouzzfrontend
         ports:
         - containerPort: 80

@@ -1,7 +1,7 @@
 frontend:
   replicaCount: 2
   image:
-    repository: your-dockerhub-username/task-manager-frontend
+    repository: skouzz/frontend
     tag: latest
   service:
     type: LoadBalancer
@@ -10,7 +10,7 @@ frontend:
 backend:
   replicaCount: 2
   image:
-    repository: your-dockerhub-username/task-manager-backend
+    repository: skouzz/backend
     tag: latest
   service:
     type: ClusterIP

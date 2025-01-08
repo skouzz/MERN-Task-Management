@@ -1,0 +1,3 @@
+[submodule "MERN-Task-Management"]
+	path = MERN-Task-Management
+	url = https://github.com/skouzz/MERN-Task-Management.git
