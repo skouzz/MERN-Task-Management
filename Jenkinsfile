@@ -4,8 +4,8 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = 'skouzz/backend'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
-        DOCKER_HUB_USERNAME = 'skouzz'  // Your Docker Hub username
-        DOCKER_HUB_PAT = 'dckr_pat_A63exY7o4rFLQ0m11Dx1WkAAZmM'  // Your Docker Hub Personal Access Token
+        DOCKER_HUB_USERNAME = 'skouzz'
+        DOCKER_HUB_PAT = credentials('dockerhub') // Replace with your Jenkins credentials ID
     }
 
     stages {
@@ -28,41 +28,25 @@ pipeline {
 
         stage('Security Scan') {
             steps {
-                script {
-                    try {
-                        echo "Running security scan on backend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for backend: ${e.message}"
-                    }
-
-                    try {
-                        echo "Running security scan on frontend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for frontend: ${e.message}"
-                    }
-                }
-            }
-        }
-
-        stage('Docker Hub Login') {  // Separate login stage
-            steps {
-                echo "Logging into Docker Hub using personal access token..."
-                bat """
-                    echo %DOCKER_HUB_PAT% | docker login --username %DOCKER_HUB_USERNAME% --password-stdin
-                """
+                echo "Running security scan on backend Docker image using Trivy..."
+                bat "docker run --rm aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
+                
+                echo "Running security scan on frontend Docker image using Trivy..."
+                bat "docker run --rm aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                echo "Pushing backend Docker image..."
+                echo "Logging into Docker Hub..."
+                bat """
+                    echo ${DOCKER_HUB_PAT} | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
+                """
+                
+                echo "Pushing backend Docker image to Docker Hub..."
                 bat "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
                 
-                echo "Pushing frontend Docker image..."
+                echo "Pushing frontend Docker image to Docker Hub..."
                 bat "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
             }
         }
@@ -70,14 +54,14 @@ pipeline {
 
     post {
         always {
-            echo "Logging out of Docker..."
+            echo "Cleaning up..."
             bat 'docker logout'
         }
         success {
-            echo "Build and push completed successfully!"
+            echo "Pipeline completed successfully!"
         }
         failure {
-            echo "Build failed, please check the logs for more details."
+            echo "Pipeline failed. Check logs for details."
         }
     }
 }
