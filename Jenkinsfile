@@ -17,10 +17,10 @@ pipeline {
         stage('Build Images') {
             steps {
                 echo "Building backend Docker image..."
-                bat "docker build -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} ./backend"
+                powershell "docker build -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} ./backend"
                 
                 echo "Building frontend Docker image..."
-                bat "docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} ./frontend"
+                powershell "docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} ./frontend"
             }
         }
 
@@ -29,7 +29,7 @@ pipeline {
                 script {
                     try {
                         echo "Running security scan on backend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
+                        powershell "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for backend: ${e.message}"
@@ -37,7 +37,7 @@ pipeline {
 
                     try {
                         echo "Running security scan on frontend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
+                        powershell "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for frontend: ${e.message}"
@@ -49,10 +49,10 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 echo "Pushing backend Docker image to Docker Hub..."
-                bat "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
+                powershell "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
                 
                 echo "Pushing frontend Docker image to Docker Hub..."
-                bat "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
+                powershell "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
             }
         }
     }
