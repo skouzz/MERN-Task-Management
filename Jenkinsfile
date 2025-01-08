@@ -50,10 +50,6 @@ pipeline {
 
         stage('Push to Docker Hub') {
             steps {
-                echo "Logging into Docker Hub..."
-                bat """
-                    echo ${DOCKER_HUB_PAT} | docker login --username ${DOCKER_HUB_USERNAME} --password-stdin
-                """
                 
                 echo "Pushing backend Docker image to Docker Hub..."
                 bat "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
