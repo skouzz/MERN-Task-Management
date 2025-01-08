@@ -4,8 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = 'skouzz/backend'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
-        DOCKER_HUB_USERNAME = 'skouzz'
-        DOCKER_HUB_PAT = credentials('dockerhub') // Replace with your Jenkins credentials ID
     }
 
     stages {
@@ -13,13 +11,6 @@ pipeline {
             steps {
                 echo "Checking out code from GitHub..."
                 checkout scm
-            }
-        }
-
-        stage('Login to Docker Hub') {
-            steps {
-                echo "Logging into Docker Hub..."
-                bat "echo ${DOCKER_HUB_PAT} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
             }
         }
 
@@ -69,7 +60,6 @@ pipeline {
     post {
         always {
             echo "Cleaning up..."
-            bat 'docker logout'
         }
         success {
             echo "Pipeline completed successfully!"
