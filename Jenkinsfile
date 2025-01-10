@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE_BACKEND = 'skouzz/backend'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
         DOCKER_IMAGE_MONGO = 'mongo'
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub') // Reference your Docker Hub credentials in Jenkins
     }
 
     stages {
@@ -52,7 +52,7 @@ pipeline {
             steps {
                 echo "Building backend Docker image..."
                 powershell "docker build -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} ./backend"
-                
+
                 echo "Pushing backend Docker image to Docker Hub..."
                 powershell "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
             }
@@ -62,7 +62,7 @@ pipeline {
             steps {
                 echo "Building frontend Docker image..."
                 powershell "docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} ./frontend"
-                
+
                 echo "Pushing frontend Docker image to Docker Hub..."
                 powershell "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
             }
