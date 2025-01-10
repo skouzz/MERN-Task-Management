@@ -60,16 +60,7 @@ pipeline {
             }
         }
 
-        stage('Deploy Backend and Frontend in Kubernetes') {
-            steps {
-                echo "Deploying backend in Kubernetes..."
-                sh 'kubectl apply -f backend-deployment.yaml'
-
-                echo "Deploying frontend in Kubernetes..."
-                sh 'kubectl apply -f frontend-deployment.yaml'
-            }
-        }
-    }
+       
 
     post {
         always {
