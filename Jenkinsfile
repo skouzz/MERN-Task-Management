@@ -39,7 +39,7 @@ pipeline {
 
                     try {
                         echo "Running security scan on MongoDB Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_MONGO}"
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest --scanners vuln image ${DOCKER_IMAGE_MONGO}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for MongoDB: ${e.message}"
