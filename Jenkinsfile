@@ -4,8 +4,8 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = 'skouzz/backend'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
-        DOCKER_IMAGE_MONGO = 'mongo'
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub') // Reference your Docker Hub credentials in Jenkins
+        DOCKER_IMAGE_MONGO = 'skouzz/mongo'
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
     }
 
     stages {
@@ -18,54 +18,41 @@ pipeline {
             }
         }
 
-     stage('Security Scan') {
-    steps {
-        script {
-            try {
-                echo "Running security scan on backend Docker image using Trivy..."
-                bat """
-                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}
-                """
-            } catch (Exception e) {
-                currentBuild.result = 'FAILURE'
-                error "Security scan failed for backend: ${e.message}"
-            }
+        stage('Security Scan') {
+            steps {
+                script {
+                    try {
+                        echo "Running security scan on backend Docker image using Trivy..."
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for backend: ${e.message}"
+                    }
 
-            try {
-                echo "Running security scan on frontend Docker image using Trivy..."
-                bat """
-                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
-                """
-            } catch (Exception e) {
-                currentBuild.result = 'FAILURE'
-                error "Security scan failed for frontend: ${e.message}"
-            }
+                    try {
+                        echo "Running security scan on frontend Docker image using Trivy..."
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for frontend: ${e.message}"
+                    }
 
-            try {
-                echo "Running security scan on MongoDB Docker image using Trivy..."
-                bat """
-                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_MONGO}:${BUILD_NUMBER}
-                """
-            } catch (Exception e) {
-                currentBuild.result = 'FAILURE'
-                error "Security scan failed for MongoDB: ${e.message}"
+                    try {
+                        echo "Running security scan on MongoDB Docker image using Trivy..."
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_MONGO}:${BUILD_NUMBER}"
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for MongoDB: ${e.message}"
+                    }
+                }
             }
-
-            // After the first run, you can use the skip-db-update flag.
-            echo "Running security scan on backend Docker image with DB cache..."
-            bat """
-            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --skip-db-update ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}
-            """
         }
-    }
-}
-
 
         stage('Build and Push Backend Docker Image') {
             steps {
                 echo "Building backend Docker image..."
                 powershell "docker build -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} ./backend"
-
+                
                 echo "Pushing backend Docker image to Docker Hub..."
                 powershell "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
             }
@@ -75,7 +62,7 @@ pipeline {
             steps {
                 echo "Building frontend Docker image..."
                 powershell "docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} ./frontend"
-
+                
                 echo "Pushing frontend Docker image to Docker Hub..."
                 powershell "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
             }
