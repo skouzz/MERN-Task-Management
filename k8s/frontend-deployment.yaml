@@ -13,7 +13,15 @@ spec:
         app: frontend
     spec:
       containers:
-      - name: frontend
-        image: skouzz/frontend
-        ports:
-        - containerPort: 3000
+        - name: frontend
+          image: skouzz/frontend  # Your frontend Docker image
+          ports:
+            - containerPort: 80  # Exposing port 3000 inside the container
+          resources:
+            requests:
+              memory: "256Mi"  # Amount of memory requested
+              cpu: "250m"      # Amount of CPU requested
+            limits:
+              memory: "512Mi"  # Maximum memory the container can use
+              cpu: "500m"      # Maximum CPU the container can use
+      restartPolicy: Always  # Ensures pods are always restarted if they fail

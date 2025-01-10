@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  mongodb-uri: mongodb://mongodb:27017/task-manager
+  mongodb-uri: "mongodb://localhost:27017"
