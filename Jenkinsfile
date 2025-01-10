@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = 'skouzz/backend:latest'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend:latest'
+        DOCKER_IMAGE_MONGO = 'skouzz/mongo:latest'  // Add Mongo image if custom
         DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
     }
 
@@ -35,6 +36,15 @@ pipeline {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for frontend: ${e.message}"
                     }
+
+                    // Optional: If you have a custom MongoDB image, scan it
+                    try {
+                        echo "Running security scan on MongoDB Docker image using Trivy..."
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_MONGO}"
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for MongoDB: ${e.message}"
+                    }
                 }
             }
         }
@@ -56,6 +66,24 @@ pipeline {
                 
                 echo "Pushing frontend Docker image to Docker Hub..."
                 powershell "docker push ${DOCKER_IMAGE_FRONTEND}"
+            }
+        }
+
+        stage('Deploy MongoDB in Kubernetes') {
+            steps {
+                echo "Deploying MongoDB in Kubernetes..."
+                // Apply the MongoDB deployment and service to the Kubernetes cluster
+                sh 'kubectl apply -f mongo-deployment.yaml'
+            }
+        }
+
+        stage('Deploy Backend and Frontend in Kubernetes') {
+            steps {
+                echo "Deploying backend in Kubernetes..."
+                sh 'kubectl apply -f backend-deployment.yaml'
+
+                echo "Deploying frontend in Kubernetes..."
+                sh 'kubectl apply -f frontend-deployment.yaml'
             }
         }
     }
