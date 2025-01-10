@@ -1,13 +1,12 @@
 pipeline {
     agent any
 
-  environment {
-    DOCKER_IMAGE_BACKEND = 'skouzz/backend'
-    DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
-    DOCKER_IMAGE_MONGO = 'skouzz/mongo:latest' // Update this to use the latest tag
-    DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
-}
-
+    environment {
+        DOCKER_IMAGE_BACKEND = 'skouzz/backend'
+        DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
+        DOCKER_IMAGE_MONGO = 'skouzz/mongo:latest' // Use 'latest' tag
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
+    }
 
     stages {
         stage('Login to Docker Hub') {
@@ -24,7 +23,7 @@ pipeline {
                 script {
                     try {
                         echo "Running security scan on backend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for backend: ${e.message}"
@@ -32,7 +31,7 @@ pipeline {
 
                     try {
                         echo "Running security scan on frontend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for frontend: ${e.message}"
@@ -40,7 +39,7 @@ pipeline {
 
                     try {
                         echo "Running security scan on MongoDB Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_MONGO}:${BUILD_NUMBER}"
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_MONGO}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for MongoDB: ${e.message}"
@@ -52,30 +51,30 @@ pipeline {
         stage('Build and Push Backend Docker Image') {
             steps {
                 echo "Building backend Docker image..."
-                powershell "docker build -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} ./backend"
+                powershell "docker build -t ${DOCKER_IMAGE_BACKEND} ./backend"
                 
                 echo "Pushing backend Docker image to Docker Hub..."
-                powershell "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
+                powershell "docker push ${DOCKER_IMAGE_BACKEND}"
             }
         }
 
         stage('Build and Push Frontend Docker Image') {
             steps {
                 echo "Building frontend Docker image..."
-                powershell "docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} ./frontend"
+                powershell "docker build -t ${DOCKER_IMAGE_FRONTEND} ./frontend"
                 
                 echo "Pushing frontend Docker image to Docker Hub..."
-                powershell "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
+                powershell "docker push ${DOCKER_IMAGE_FRONTEND}"
             }
         }
 
         stage('Build and Push MongoDB Docker Image') {
             steps {
                 echo "Building MongoDB Docker image..."
-                powershell "docker build -t ${DOCKER_IMAGE_MONGO}:${BUILD_NUMBER} ./mongo"
+                powershell "docker build -t ${DOCKER_IMAGE_MONGO} ./mongo"
 
                 echo "Pushing MongoDB Docker image to Docker Hub..."
-                powershell "docker push ${DOCKER_IMAGE_MONGO}:${BUILD_NUMBER}"
+                powershell "docker push ${DOCKER_IMAGE_MONGO}"
             }
         }
     }
