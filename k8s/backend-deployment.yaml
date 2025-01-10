@@ -14,20 +14,9 @@ spec:
     spec:
       containers:
         - name: backend
-          image: skouzz/backend  # Your backend Docker image
+          image: skouzz/backend  # Your frontend Docker image
           ports:
-            - containerPort: 5000  # Exposing port 5000 inside the container
-          env:
-            - name: MONGODB_URI
-              valueFrom:
-                configMapKeyRef:
-                  name: app-config
-                  key: mongodb-uri
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: jwt-secret
+            - containerPort: 5000  # Exposing port 3000 inside the container
           resources:
             requests:
               memory: "256Mi"  # Amount of memory requested
@@ -35,4 +24,4 @@ spec:
             limits:
               memory: "512Mi"  # Maximum memory the container can use
               cpu: "500m"      # Maximum CPU the container can use
-      restartPolicy: Always  # Ensures that pods are restarted if they fail
+      restartPolicy: Always  # Ensures pods are always restarted if they fail
