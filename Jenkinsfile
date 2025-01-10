@@ -1,7 +1,10 @@
+
 pipeline {
     agent any
 
     environment {
+        DOCKER_IMAGE_BACKEND = 'skouzz/backend'
+        DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
         DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
     }
 
@@ -20,7 +23,7 @@ pipeline {
                 script {
                     try {
                         echo "Running security scan on backend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image skouzz/backend"
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for backend: ${e.message}"
@@ -28,34 +31,36 @@ pipeline {
 
                     try {
                         echo "Running security scan on frontend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image skouzz/frontend"
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for frontend: ${e.message}"
-                    }
-
-                    try {
-                        echo "Running security scan on MongoDB Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image mongo:latest"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for MongoDB: ${e.message}"
                     }
                 }
             }
         }
 
-        stage('Build and Push Docker Images with Docker Compose') {
+        stage('Build and Push Backend Docker Image') {
             steps {
-                echo "Building and pushing Docker images with Docker Compose..."
-
-                // Build and push backend, frontend, and mongodb images using docker-compose
-                powershell """
-                docker-compose -f docker-compose.yml build backend frontend mongodb
-                docker-compose -f docker-compose.yml push backend frontend mongodb
-                """
+                echo "Building backend Docker image..."
+                powershell "docker build -t ${DOCKER_IMAGE_BACKEND} ./backend"
+                
+                echo "Pushing backend Docker image to Docker Hub..."
+                powershell "docker push ${DOCKER_IMAGE_BACKEND}"
             }
         }
+
+        stage('Build and Push Frontend Docker Image') {
+            steps {
+                echo "Building frontend Docker image..."
+                powershell "docker build -t ${DOCKER_IMAGE_FRONTEND} ./frontend"
+                
+                echo "Pushing frontend Docker image to Docker Hub..."
+                powershell "docker push ${DOCKER_IMAGE_FRONTEND}"
+            }
+        }
+
+    
     }
 
     post {
