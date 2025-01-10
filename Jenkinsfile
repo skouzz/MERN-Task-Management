@@ -4,7 +4,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_BACKEND = 'skouzz/project-backend:latest'
-        DOCKER_IMAGE_FRONTEND = 'skouzz/project-backend:latest'
+        DOCKER_IMAGE_FRONTEND = 'skouzz/project-frontend:latest'
         DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
     }
 
