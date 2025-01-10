@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = 'skouzz/backend'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
-        DOCKER_IMAGE_MONGO = 'skouzz/mongo' // Update this to use the latest tag
+        DOCKER_IMAGE_MONGO = 'skouzz/mongo:latest' // Update this to use the latest tag
         DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
     }
 
