@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = 'skouzz/backend:latest'
         DOCKER_IMAGE_FRONTEND = 'skouzz/frontend:latest'
+        DOCKER_IMAGE_MONGO = 'skouzz/mongo:latest'  // Add MongoDB image
         DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
     }
 
@@ -35,6 +36,14 @@ pipeline {
                         currentBuild.result = 'FAILURE'
                         error "Security scan failed for frontend: ${e.message}"
                     }
+
+                    try {
+                        echo "Running security scan on MongoDB Docker image using Trivy..."
+                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_MONGO}"
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Security scan failed for MongoDB: ${e.message}"
+                    }
                 }
             }
         }
@@ -56,6 +65,16 @@ pipeline {
                 
                 echo "Pushing frontend Docker image to Docker Hub..."
                 powershell "docker push ${DOCKER_IMAGE_FRONTEND}"
+            }
+        }
+
+        stage('Build and Push MongoDB Docker Image') {
+            steps {
+                echo "Building MongoDB Docker image..."
+                powershell "docker build -t ${DOCKER_IMAGE_MONGO} ./mongo"  // Assuming you have a MongoDB Dockerfile in the ./mongo directory
+                
+                echo "Pushing MongoDB Docker image to Docker Hub..."
+                powershell "docker push ${DOCKER_IMAGE_MONGO}"
             }
         }
     }
