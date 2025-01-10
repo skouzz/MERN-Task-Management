@@ -3,8 +3,8 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE_BACKEND = 'project/skouzz/backend:latest'
-        DOCKER_IMAGE_FRONTEND = 'project/skouzz/frontend:latest'
+        DOCKER_IMAGE_BACKEND = 'skouzz/project-backend:latest'
+        DOCKER_IMAGE_FRONTEND = 'skouzz/project-backend:latest'
         DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
     }
 
