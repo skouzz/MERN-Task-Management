@@ -18,35 +18,35 @@ pipeline {
             }
         }
 
-        stage('Security Scan') {
-            steps {
-                script {
-                    try {
-                        echo "Running security scan on backend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for backend: ${e.message}"
-                    }
+       stage('Security Scan') {
+    steps {
+        script {
+            try {
+                echo "Running security scan on backend Docker image using Trivy..."
+                bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --skip-update ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
+            } catch (Exception e) {
+                currentBuild.result = 'FAILURE'
+                error "Security scan failed for backend: ${e.message}"
+            }
 
-                    try {
-                        echo "Running security scan on frontend Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for frontend: ${e.message}"
-                    }
+            try {
+                echo "Running security scan on frontend Docker image using Trivy..."
+                bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --skip-update ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
+            } catch (Exception e) {
+                currentBuild.result = 'FAILURE'
+                error "Security scan failed for frontend: ${e.message}"
+            }
 
-                    try {
-                        echo "Running security scan on MongoDB Docker image using Trivy..."
-                        bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${DOCKER_IMAGE_MONGO}:${BUILD_NUMBER}"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Security scan failed for MongoDB: ${e.message}"
-                    }
-                }
+            try {
+                echo "Running security scan on MongoDB Docker image using Trivy..."
+                bat "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --skip-update ${DOCKER_IMAGE_MONGO}:${BUILD_NUMBER}"
+            } catch (Exception e) {
+                currentBuild.result = 'FAILURE'
+                error "Security scan failed for MongoDB: ${e.message}"
             }
         }
+    }
+}
 
         stage('Build and Push Backend Docker Image') {
             steps {
