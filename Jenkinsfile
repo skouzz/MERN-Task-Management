@@ -1,12 +1,13 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_IMAGE_BACKEND = 'skouzz/backend'
-        DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
-        DOCKER_IMAGE_MONGO = 'skouzz/mongo'
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
-    }
+  environment {
+    DOCKER_IMAGE_BACKEND = 'skouzz/backend'
+    DOCKER_IMAGE_FRONTEND = 'skouzz/frontend'
+    DOCKER_IMAGE_MONGO = 'skouzz/mongo:latest' // Update this to use the latest tag
+    DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
+}
+
 
     stages {
         stage('Login to Docker Hub') {
