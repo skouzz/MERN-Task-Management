@@ -13,22 +13,37 @@ spec:
         app: mongo
     spec:
       containers:
-      - name: mongo
-        image: skouzz/mongo  # Your MongoDB image from Docker Hub
-        ports:
-        - containerPort: 27017  # MongoDB default port
-
+        - name: mongo
+          image: mongo:latest
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: mongo-data
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongo
+  name: mongo-service
 spec:
   selector:
     app: mongo
   ports:
-    - protocol: TCP
-      port: 27017  # MongoDB default port
+    - port: 27017
       targetPort: 27017
-      nodePort: 30017  # Expose MongoDB on port 30017 (can change if needed)
-  type: NodePort  # Change from ClusterIP to NodePort
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
